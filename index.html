@@ -6,48 +6,132 @@
     <title>淘汰式抽奖</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f0f0f0;
+            background-color: #f9f9f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        #participant-names {
+            width: 100%;
+            max-width: 600px;
+            height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            font-size: 1em;
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ddd;
+        }
+        #main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
         }
         #participants-list {
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 20px;
+            padding: 15px;
             background-color: #fff;
             border: 1px solid #ccc;
+            border-radius: 5px;
             max-width: 400px;
+            min-width: 300px;
+            height: fit-content;
+        }
+        .participant {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .participant:last-child {
+            border-bottom: none;
         }
         .winner {
-            color: green;
+            color: #FF5722;
             font-weight: bold;
+        }
+        .delete-button {
+            color: #f44336;
+            cursor: pointer;
+            font-size: 0.9em;
+            border: none;
+            background: none;
+            transition: color 0.3s;
+        }
+        .delete-button:hover {
+            color: #d32f2f;
+        }
+        #winners-list {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-width: 400px;
+            min-width: 300px;
         }
     </style>
 </head>
 <body>
     <h1>淘汰式抽奖</h1>
-    <input type="text" id="participant-name" placeholder="请输入参与者的名字">
-    <button onclick="addParticipant()">添加参与者</button>
-    <button onclick="drawLottery()">抽奖</button>
-    <div id="participants-list"></div>
-    <div id="winners-list"></div>
+    <textarea id="participant-names" placeholder="请输入参与者的名字，每行一个"></textarea><br>
+    <button onclick="addParticipants()" style="background-color: #4CAF50; color: white;">添加参与者</button>
+    <button onclick="drawLottery()" style="background-color: #FF9800; color: white;">抽奖</button>
+    <div id="main-container">
+        <div id="participants-list"></div>
+        <div id="winners-list"></div>
+    </div>
 
     <script>
         let participants = [];
 
-        function addParticipant() {
-            const nameInput = document.getElementById('participant-name');
-            const name = nameInput.value.trim();
-            if (name && !participants.includes(name)) {
-                participants.push(name);
-                updateParticipantsList();
-                nameInput.value = '';
-            }
+        function addParticipants() {
+            const namesInput = document.getElementById('participant-names');
+            const names = namesInput.value.trim().split('\n');
+            names.forEach(name => {
+                name = name.trim();
+                if (name && !participants.includes(name)) {
+                    participants.push(name);
+                }
+            });
+            updateParticipantsList();
+            namesInput.value = '';
         }
 
         function updateParticipantsList() {
             const listDiv = document.getElementById('participants-list');
-            listDiv.innerHTML = `<h3>当前的名单池:</h3> ${participants.map((name, index) => `${index + 1}. ${name}`).join('<br>')}`;
+            listDiv.innerHTML = `<h3>当前的名单池:</h3> ${participants.map((name, index) => `<div class='participant'>${index + 1}. ${name} <input type='checkbox' onchange='toggleDelete(${index})'> 删除</div>`).join('')}`;
+        }
+
+        function toggleDelete(index) {
+            const participant = participants[index];
+            if (participant) {
+                participants.splice(index, 1);
+                updateParticipantsList();
+            }
         }
 
         function drawLottery() {
