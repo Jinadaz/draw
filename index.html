@@ -152,17 +152,17 @@
 </head>
 <body>
     <h1>Lucky Draw</h1>
-    <textarea id="participant-names" placeholder="请输入参与者的名字，每行一个"></textarea><br>
+    <textarea id="participant-names" placeholder="Sila masukkan nama peserta"></textarea><br>
     <div id="button-container">
         <button onclick="addParticipants()" style="background-color: #4CAF50; color: white;">Add</button>
-        <input type="number" id="num-winners-input" placeholder="人数" min="1">
+        <input type="number" id="num-winners-input" placeholder="" min="1">
         <button onclick="drawLottery()" style="background-color: #FF9800; color: white;">Draw</button>
         <button onclick="showDeleteOverlay()" style="background-color: #f44336; color: white;">Delete</button>
     </div>
     <div id="main-container">
         <div id="participants-list"></div>
     </div>
-    <div id="name-display">Waitting...</div>
+    <div id="name-display">Waiting...</div>
 
     <div id="delete-overlay" style="display: none;">
         <input type="text" id="delete-search" placeholder="搜索名字..." oninput="filterDeleteList()">
