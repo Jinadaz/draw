@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>淘汰式抽奖</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #participants-list {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            max-width: 400px;
+        }
+        .winner {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>淘汰式抽奖</h1>
+    <input type="text" id="participant-name" placeholder="请输入参与者的名字">
+    <button onclick="addParticipant()">添加参与者</button>
+    <button onclick="drawLottery()">抽奖</button>
+    <div id="participants-list"></div>
+    <div id="winners-list"></div>
+
+    <script>
+        let participants = [];
+
+        function addParticipant() {
+            const nameInput = document.getElementById('participant-name');
+            const name = nameInput.value.trim();
+            if (name && !participants.includes(name)) {
+                participants.push(name);
+                updateParticipantsList();
+                nameInput.value = '';
+            }
+        }
+
+        function updateParticipantsList() {
+            const listDiv = document.getElementById('participants-list');
+            listDiv.innerHTML = `<h3>当前的名单池:</h3> ${participants.map((name, index) => `${index + 1}. ${name}`).join('<br>')}`;
+        }
+
+        function drawLottery() {
+            const numWinners = prompt("请输入本次抽奖的人数:");
+            if (numWinners > participants.length) {
+                alert("抽奖人数不能多于参与者人数！");
+                return;
+            }
+            const winners = [];
+            for (let i = 0; i < numWinners; i++) {
+                const index = Math.floor(Math.random() * participants.length);
+                winners.push(participants.splice(index, 1)[0]);
+            }
+            updateParticipantsList();
+            displayWinners(winners);
+        }
+
+        function displayWinners(winners) {
+            const winnersDiv = document.getElementById('winners-list');
+            winnersDiv.innerHTML = `<h3>恭喜以下获奖者:</h3> ${winners.map((name, index) => `<span class='winner'>${index + 1}. ${name}</span>`).join('<br>')}`;
+            if (participants.length === 0) {
+                winnersDiv.innerHTML += "<p>所有参与者都已被抽完！抽奖结束。</p>";
+            }
+        }
+    </script>
+</body>
+</html>
