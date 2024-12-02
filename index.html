@@ -45,9 +45,11 @@
         }
         #main-container {
             display: flex;
+            flex-direction: column;
             gap: 20px;
             max-width: 1200px;
             width: 100%;
+            align-items: center;
         }
         #participants-list {
             margin-top: 20px;
@@ -55,34 +57,31 @@
             background-color: #fff;
             border: 1px solid #ccc;
             border-radius: 5px;
-            max-width: 400px;
-            min-width: 300px;
-            height: fit-content;
+            width: 100%;
+            max-width: 1200px;
+            height: 500px;
+            overflow: hidden;
+            position: relative;
+            font-size: 0.8em;
         }
         .participant {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 0;
-            border-bottom: 1px solid #e0e0e0;
+            position: absolute;
+            white-space: nowrap;
+            color: #333;
+            max-width: 100%;
+            word-break: break-all;
+            transition: top 1s ease, left 1s ease;
         }
-        .participant:last-child {
-            border-bottom: none;
+        .falling {
+            animation: fall 1s ease forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(200%); opacity: 0; }
         }
         .winner {
             color: #FF5722;
             font-weight: bold;
-        }
-        .delete-button {
-            color: #f44336;
-            cursor: pointer;
-            font-size: 0.9em;
-            border: none;
-            background: none;
-            transition: color 0.3s;
-        }
-        .delete-button:hover {
-            color: #d32f2f;
         }
         #winners-list {
             margin-top: 20px;
@@ -93,6 +92,19 @@
             max-width: 400px;
             min-width: 300px;
         }
+        #name-display {
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: #333;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 600px;
+        }
     </style>
 </head>
 <body>
@@ -100,13 +112,17 @@
     <textarea id="participant-names" placeholder="请输入参与者的名字，每行一个"></textarea><br>
     <button onclick="addParticipants()" style="background-color: #4CAF50; color: white;">添加参与者</button>
     <button onclick="drawLottery()" style="background-color: #FF9800; color: white;">抽奖</button>
+    <button onclick="deleteParticipants()" style="background-color: #f44336; color: white;">删除名单</button>
     <div id="main-container">
         <div id="participants-list"></div>
         <div id="winners-list"></div>
     </div>
+    <div id="name-display">等待抽奖...</div>
 
     <script>
         let participants = [];
+        let participantElements = [];
+        let isDrawing = false;
 
         function addParticipants() {
             const namesInput = document.getElementById('participant-names');
@@ -123,30 +139,82 @@
 
         function updateParticipantsList() {
             const listDiv = document.getElementById('participants-list');
-            listDiv.innerHTML = `<h3>当前的名单池:</h3> ${participants.map((name, index) => `<div class='participant'>${index + 1}. ${name} <input type='checkbox' onchange='toggleDelete(${index})'> 删除</div>`).join('')}`;
-        }
-
-        function toggleDelete(index) {
-            const participant = participants[index];
-            if (participant) {
-                participants.splice(index, 1);
-                updateParticipantsList();
+            listDiv.innerHTML = '';
+            participantElements = [];
+            participants.forEach((name, index) => {
+                const participantDiv = document.createElement('div');
+                participantDiv.className = 'participant';
+                participantDiv.style.top = `${Math.random() * 80}%`;
+                participantDiv.style.left = `${Math.random() * 80}%`;
+                participantDiv.textContent = `${index + 1}. ${name}`;
+                listDiv.appendChild(participantDiv);
+                participantElements.push(participantDiv);
+            });
+            if (!isDrawing) {
+                requestAnimationFrame(updatePositions);
             }
         }
 
+        function updatePositions() {
+            participantElements.forEach((element, index) => {
+                if (!element.classList.contains('falling')) {
+                    let newTop = parseFloat(element.style.top) + (Math.random() * 10 - 5);
+                    let newLeft = parseFloat(element.style.left) + (Math.random() * 10 - 5);
+
+                    // Ensure the elements stay within bounds
+                    if (newTop < 0) newTop = 0;
+                    if (newTop > 90) newTop = 90;
+                    if (newLeft < 0) newLeft = 0;
+                    if (newLeft > 90) newLeft = 90;
+
+                    element.style.top = `${newTop}%`;
+                    element.style.left = `${newLeft}%`;
+                }
+            });
+            requestAnimationFrame(updatePositions);
+        }
+
         function drawLottery() {
-            const numWinners = prompt("请输入本次抽奖的人数:");
+            const numWinners = parseInt(prompt("请输入本次抽奖的人数:"));
+            if (isNaN(numWinners) || numWinners <= 0) {
+                alert("请输入有效的抽奖人数！");
+                return;
+            }
             if (numWinners > participants.length) {
                 alert("抽奖人数不能多于参与者人数！");
                 return;
             }
+            isDrawing = true;
+            const nameDisplay = document.getElementById('name-display');
+            let counter = 0;
+            const interval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * participants.length);
+                nameDisplay.textContent = participants[randomIndex];
+                counter++;
+                if (counter > 20) { // 控制动画的持续时间
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        pickWinners(numWinners);
+                        isDrawing = false;
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        function pickWinners(numWinners) {
             const winners = [];
             for (let i = 0; i < numWinners; i++) {
                 const index = Math.floor(Math.random() * participants.length);
-                winners.push(participants.splice(index, 1)[0]);
+                const winner = participants.splice(index, 1)[0];
+                winners.push(winner);
+                // Animate the falling effect for the selected winner
+                participantElements[index].classList.add('falling');
             }
-            updateParticipantsList();
-            displayWinners(winners);
+            setTimeout(() => {
+                participantElements = participantElements.filter(element => !element.classList.contains('falling'));
+                updateParticipantsList();
+                displayWinners(winners);
+            }, 1000); // Delay updating the list to allow the falling animation to complete
         }
 
         function displayWinners(winners) {
@@ -155,6 +223,14 @@
             if (participants.length === 0) {
                 winnersDiv.innerHTML += "<p>所有参与者都已被抽完！抽奖结束。</p>";
             }
+            const nameDisplay = document.getElementById('name-display');
+            nameDisplay.textContent = `恭喜 ${winners[0]}!`;
+        }
+
+        function deleteParticipants() {
+            participants = [];
+            participantElements = [];
+            updateParticipantsList();
         }
     </script>
 </body>
