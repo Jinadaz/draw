@@ -5,32 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lucky Draw</title>
     <style>
+         body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 确保没有滚动条 */
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* 确保 canvas 在背景层 */
+        }
+
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
             padding: 20px;
-            background-color: #f9f9f9;
+            background-color: transparent; /* 背景透明 */
             color: #333;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         h1 {
             text-align: center;
             color: #4CAF50;
             font-size: 2.5em;
             margin-bottom: 20px;
         }
+
         #participant-names {
-            width: 100%;
-            max-width: 600px;
-            height: 100px;
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 1em;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
+    width: 100%;
+    max-width: 600px;
+    height: 100px;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 1em;
+    border: 1px solid rgba(255, 255, 255, 0.5); /* 半透明边框 */
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.2); /* 半透明背景 */
+    color: white; /* 确保文字清晰可见 */
+}
+
         button {
             font-size: 1em;
             padding: 10px 15px;
@@ -40,9 +59,11 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         button:hover {
             background-color: #ddd;
         }
+
         #main-container {
             display: flex;
             flex-direction: column;
@@ -57,26 +78,53 @@
             margin-bottom: 20px;
         }
         #participants-list {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            width: 100%;
-            max-width: 1200px;
-            height: 500px;
-            overflow: hidden;
-            position: relative;
-            font-size: 0.8em;
-        }
+    margin-top: 20px;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.2); /* 半透明背景 */
+    border: 1px solid rgba(255, 255, 255, 0.5); /* 半透明边框 */
+    border-radius: 5px;
+    width: 100%;
+    max-width: 1200px;
+    height: 500px;
+    overflow: hidden;
+    position: relative;
+    font-size: 0.8em;
+    color: white; /* 确保文字清晰可见 */
+}
+      .small {
+        font-size: 1em;
+    }
+    .medium {
+        font-size: 1.3em;
+    }
+    .large {
+        font-size: 1.6em;
+    }
+
+    /* 颜色样式 */
+    .color1 {
+        color: #e91e63;
+    }
+    .color2 {
+        color: #3f51b5;
+    }
+    .color3 {
+        color: #4caf50;
+    }
+    .color4 {
+        color: #ff9800;
+    }
+    .color5 {
+        color: #9c27b0;
+    }
         .participant {
-            position: absolute;
-            white-space: nowrap;
-            color: #333;
-            max-width: 100%;
-            word-break: break-all;
-            transition: top 1s ease, left 1s ease;
-        }
+    position: absolute;
+    white-space: nowrap;
+    max-width: 100%;
+    word-break: break-all;
+    transition: top 1s ease, left 1s ease;
+}
+
         .falling {
             animation: fall 1s ease forwards;
         }
@@ -151,6 +199,8 @@
     </style>
 </head>
 <body>
+    <canvas></canvas>
+    <div id="name-display">Waiting...</div>
     <h1>Lucky Draw</h1>
     <textarea id="participant-names" placeholder="Sila masukkan nama peserta"></textarea><br>
     <div id="button-container">
@@ -162,8 +212,6 @@
     <div id="main-container">
         <div id="participants-list"></div>
     </div>
-    <div id="name-display">Waiting...</div>
-
     <div id="delete-overlay" style="display: none;">
         <input type="text" id="delete-search" placeholder="搜索名字..." oninput="filterDeleteList()">
         <div id="delete-list"></div>
@@ -174,37 +222,152 @@
         let participants = [];
         let participantElements = [];
         let isDrawing = false;
+        
+        let size = { width: window.innerWidth, height: window.innerHeight };
+        let circles = [];
+        let circlesBig = [];
+        let mouseX = -100, mouseY = -100;
+
+        const sqr = (x) => x * x;
+
+        function initCanvas() {
+            const canvas = document.querySelector('canvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                size.width = window.innerWidth;
+                size.height = window.innerHeight;
+                canvas.width = size.width;
+                canvas.height = size.height;
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            circles = Array.from({ length: 100 }, () => ({
+                x: Math.random() * size.width,
+                y: Math.random() * size.height,
+                s: Math.random() * 20 + 2,
+                dy: 0,
+                dtary: Math.random() + 0.2,
+                dx: 0
+            }));
+
+            circlesBig = Array.from({ length: 20 }, () => ({
+                x: Math.random() * size.width,
+                y: Math.random() * size.height,
+                s: Math.random() * 40 + 30,
+                dy: Math.random() * 0.5
+            }));
+
+            function update() {
+                circles.forEach(c => {
+                    c.x += c.dx;
+                    c.y -= c.dy;
+                    c.y = c.y < -c.s ? size.height + c.s : c.y;
+                    c.x = c.x < -c.s ? size.width + c.s : c.x > size.width + c.s ? -c.s : c.x;
+
+                    c.dx *= 0.8;
+                    c.dy = (c.dy - c.dtary) * 0.8 + c.dtary;
+
+                    const lsq = sqr(c.x - mouseX) + sqr(c.y - mouseY);
+                    if (lsq < 2500) {
+                        const l = Math.sqrt(lsq);
+                        const xr = (c.x - mouseX) / l;
+                        const yr = (c.y - mouseY) / l;
+
+                        c.dx += (50 - l) * xr / 20;
+                        c.dy -= (50 - l) * yr / 20;
+                    }
+                });
+
+                circlesBig.forEach(c => {
+                    c.y -= c.dy;
+                    c.y = c.y < -c.s ? size.height + c.s : c.y;
+                });
+            }
+
+            function paint() {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = 'rgb(1, 0, 0)';
+                ctx.fillRect(0, 0, size.width, size.height);
+
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+
+                circles.forEach(c => {
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, c.s, 0, 2 * Math.PI);
+                    ctx.stroke();
+                });
+
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+                ctx.lineWidth = 4;
+
+                circlesBig.forEach(c => {
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, c.s, 0, 2 * Math.PI);
+                    ctx.stroke();
+                });
+            }
+
+            function animate() {
+                update();
+                paint();
+                requestAnimationFrame(animate);
+            }
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.pageX;
+                mouseY = e.pageY;
+            });
+
+            animate();
+        }
+
+        initCanvas();
 
         function addParticipants() {
-            const namesInput = document.getElementById('participant-names');
-            const names = namesInput.value.trim().split('\n');
-            names.forEach(name => {
-                name = name.trim();
-                if (name && !participants.includes(name)) {
-                    participants.push(name);
-                }
-            });
-            updateParticipantsList();
-            namesInput.value = '';
-        }
-
-        function updateParticipantsList() {
-            const listDiv = document.getElementById('participants-list');
-            listDiv.innerHTML = '';
-            participantElements = [];
-            participants.forEach((name, index) => {
-                const participantDiv = document.createElement('div');
-                participantDiv.className = 'participant';
-                participantDiv.style.top = `${Math.random() * 80}%`;
-                participantDiv.style.left = `${Math.random() * 80}%`;
-                participantDiv.textContent = name;
-                listDiv.appendChild(participantDiv);
-                participantElements.push(participantDiv);
-            });
-            if (!isDrawing) {
-                requestAnimationFrame(updatePositions);
+        const namesInput = document.getElementById('participant-names');
+        const names = namesInput.value.trim().split('\n');
+        names.forEach(name => {
+            name = name.trim();
+            if (name && !participants.includes(name)) {
+                participants.push(name);
             }
-        }
+        });
+        updateParticipantsList();
+        namesInput.value = '';
+    }
+
+   function updateParticipantsList() {
+    const listDiv = document.getElementById('participants-list');
+    listDiv.innerHTML = '';
+    participantElements = [];
+    participants.forEach((name, index) => {
+        const participantDiv = document.createElement('div');
+        participantDiv.className = `participant ${getRandomSize()} ${getRandomColor()}`;
+        participantDiv.style.top = `${Math.random() * 80}%`;
+        participantDiv.style.left = `${Math.random() * 80}%`;
+        participantDiv.textContent = name;
+        listDiv.appendChild(participantDiv);
+        participantElements.push(participantDiv);
+    });
+    if (!isDrawing) {
+        requestAnimationFrame(updatePositions);
+    }
+}
+
+    function getRandomSize() {
+        const sizes = ['small', 'medium', 'large'];
+        return sizes[Math.floor(Math.random() * sizes.length)];
+    }
+
+    function getRandomColor() {
+        const colors = ['color1', 'color2', 'color3', 'color4', 'color5'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
 
         function updatePositions() {
             participantElements.forEach((element, index) => {
@@ -310,6 +473,7 @@
             });
             deleteOverlay.style.display = 'flex';
         }
+        
 
         function closeDeleteOverlay() {
             const deleteOverlay = document.getElementById('delete-overlay');
